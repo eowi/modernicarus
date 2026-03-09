@@ -329,7 +329,7 @@
 <body>
 
     <header class="header">
-        <h1>Modern Icarus <span class="pocket">Pocket</span> <span class="version">v1.2</span></h1>
+        <h1>Modern Icarus <span class="pocket">Pocket</span> <span class="version">v1.3</span></h1>
         <button id="btnSync" class="btn-sync">QR SYNC</button>
     </header>
     
@@ -350,7 +350,7 @@
             <div class="input-wrapper capital-group">
                 <div class="stepper-group">
                     <button class="step-btn minus" data-target="capInput" data-step="500" data-dir="-1">−</button>
-                    <input type="number" id="capInput" value="20000" step="100" inputmode="decimal">
+                    <input type="text" id="capInput" value="20000" inputmode="decimal">
                     <button class="step-btn plus" data-target="capInput" data-step="500" data-dir="1">+</button>
                 </div>
             </div>
@@ -366,7 +366,7 @@
                     <label>Odds</label>
                     <div class="stepper-group">
                         <button class="step-btn minus" data-target="odds1" data-step="0.01" data-dir="-1">−</button>
-                        <input type="number" id="odds1" placeholder="--" step="0.01" inputmode="decimal">
+                        <input type="text" id="odds1" placeholder="--" inputmode="decimal">
                         <button class="step-btn plus" data-target="odds1" data-step="0.01" data-dir="1">+</button>
                     </div>
                 </div>
@@ -375,7 +375,7 @@
                     <label>Bonus %</label>
                     <div class="stepper-group">
                         <button class="step-btn minus" data-target="bonus1" data-step="1" data-dir="-1">−</button>
-                        <input type="number" id="bonus1" value="10" step="1" inputmode="numeric">
+                        <input type="text" id="bonus1" value="10" inputmode="decimal">
                         <button class="step-btn plus" data-target="bonus1" data-step="1" data-dir="1">+</button>
                     </div>
                 </div>
@@ -389,7 +389,7 @@
                     <label>Odds</label>
                     <div class="stepper-group">
                         <button class="step-btn minus" data-target="odds2" data-step="0.01" data-dir="-1">−</button>
-                        <input type="number" id="odds2" placeholder="--" step="0.01" inputmode="decimal">
+                        <input type="text" id="odds2" placeholder="--" inputmode="decimal">
                         <button class="step-btn plus" data-target="odds2" data-step="0.01" data-dir="1">+</button>
                     </div>
                 </div>
@@ -398,7 +398,7 @@
                     <label>Bonus %</label>
                     <div class="stepper-group">
                         <button class="step-btn minus" data-target="bonus2" data-step="1" data-dir="-1">−</button>
-                        <input type="number" id="bonus2" value="10" step="1" inputmode="numeric">
+                        <input type="text" id="bonus2" value="10" inputmode="decimal">
                         <button class="step-btn plus" data-target="bonus2" data-step="1" data-dir="1">+</button>
                     </div>
                 </div>
@@ -506,11 +506,24 @@
             }
         }
 
+        // Input Parser (v1.3 Keyboard Fix)
+        // Converts Strings like "1,85" to Float 1.85
+        function parseVal(val) {
+            if (!val && val !== 0) return NaN;
+            return parseFloat(String(val).replace(/,/g, '.'));
+        }
+
         // Listeners
         function attachListeners() {
             // Typing
             [elCap, elOdds1, elBonus1, elOdds2, elBonus2].forEach(input => {
-                input.addEventListener('input', () => {
+                input.addEventListener('input', (e) => {
+                    // Real-time comma to dot sanitizer
+                    if (e.target.value.includes(',')) {
+                        let cursor = e.target.selectionStart;
+                        e.target.value = e.target.value.replace(/,/g, '.');
+                        if (cursor !== null) e.target.setSelectionRange(cursor, cursor);
+                    }
                     calculate();
                     saveState();
                 });
@@ -577,7 +590,7 @@
 
             if (!targetInput) return;
 
-            let currentVal = parseFloat(targetInput.value);
+            let currentVal = parseVal(targetInput.value);
             if (isNaN(currentVal)) {
                 if (targetId.includes('odds')) currentVal = 1.00;
                 else if (targetId.includes('bonus')) currentVal = 10;
@@ -597,6 +610,7 @@
                 if (newVal < 100) newVal = 100; 
             }
 
+            // Ensures dot format
             targetInput.value = newVal;
             calculate();
             saveState();
@@ -606,8 +620,8 @@
         function calcROI(cap, o1, o2, bonusPercent1, bonusPercent2) {
             if (o1 <= 1 || o2 <= 1) return { b1: 0, b2: 0, netProfit: 0 };
             
-            const k1 = (parseFloat(bonusPercent1) || 0) / 100;
-            const k2 = (parseFloat(bonusPercent2) || 0) / 100;
+            const k1 = (parseVal(bonusPercent1) || 0) / 100;
+            const k2 = (parseVal(bonusPercent2) || 0) / 100;
             
             const num = cap * (o2 - k2);
             const den = o1 + o2 - k1 - k2;
@@ -624,11 +638,11 @@
 
         // Calculator & UI Updates
         function calculate() {
-            const cap = parseFloat(elCap.value);
-            const o1 = parseFloat(elOdds1.value);
-            const b1 = parseFloat(elBonus1.value) || 0;
-            const o2 = parseFloat(elOdds2.value);
-            const b2 = parseFloat(elBonus2.value) || 0;
+            const cap = parseVal(elCap.value);
+            const o1 = parseVal(elOdds1.value);
+            const b1 = parseVal(elBonus1.value) || 0;
+            const o2 = parseVal(elOdds2.value);
+            const b2 = parseVal(elBonus2.value) || 0;
             
             if (!cap || !o1 || !o2 || o1 <= 1 || o2 <= 1) {
                 res1.textContent = '--';
