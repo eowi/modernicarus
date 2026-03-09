@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-
-    <!-- iOS Standalone (Tam Ekran) ve Logo Ayarları -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="logo.png">
-
-    <!-- Android / Genel Tarayıcı Logo (Favicon) ve Tema Rengi -->
-    <link rel="icon" type="image/png" href="logo.png">
-    <meta name="theme-color" content="#000000">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Modern Icarus Pocket</title>
@@ -375,9 +364,15 @@
             border: 1px solid #333; background: #111; color: #fff;
             font-size: 28px; font-weight: 600; font-family: 'Inter', sans-serif;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; touch-action: manipulation; transition: background 0.1s;
+            cursor: pointer; touch-action: manipulation; 
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
         }
-        .num-btn:active { background: #333; }
+        .num-btn.active-tap { 
+            background: #FFFFFF; color: #000000;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+            transition: none; /* Instant flash */
+        }
         .num-btn.zero { grid-column: 2; }
 
         @keyframes shake {
@@ -405,15 +400,15 @@
             <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
         </div>
         <div class="numpad" id="numpad">
-            <button class="num-btn">1</button><button class="num-btn">2</button><button class="num-btn">3</button>
-            <button class="num-btn">4</button><button class="num-btn">5</button><button class="num-btn">6</button>
-            <button class="num-btn">7</button><button class="num-btn">8</button><button class="num-btn">9</button>
-            <button class="num-btn zero">0</button>
+            <button class="num-btn" data-val="1">1</button><button class="num-btn" data-val="2">2</button><button class="num-btn" data-val="3">3</button>
+            <button class="num-btn" data-val="4">4</button><button class="num-btn" data-val="5">5</button><button class="num-btn" data-val="6">6</button>
+            <button class="num-btn" data-val="7">7</button><button class="num-btn" data-val="8">8</button><button class="num-btn" data-val="9">9</button>
+            <button class="num-btn zero" data-val="0">0</button>
         </div>
     </div>
 
     <header class="header">
-        <h1>Modern Icarus <span class="pocket">Pocket</span> <span class="version">v1.4</span></h1>
+        <h1>Modern Icarus <span class="pocket">Pocket</span> <span class="version">v1.6</span></h1>
         <button id="btnSync" class="btn-sync">QR SYNC</button>
     </header>
     
@@ -545,7 +540,7 @@
         const STORAGE_KEY = 'icarus_pocket_v1_2_state';
         const NOTES_KEY   = 'icarus_pocket_v1_2_notes';
 
-        // Security Lock Logic
+        // Security Lock Logic (v1.5 Touch + v1.6 Keyboard)
         let currentPin = "";
         const CORRECT_PIN = "0737";
         const lockScreen = document.getElementById('lockScreen');
@@ -554,6 +549,7 @@
         const pinDots = document.querySelectorAll('.pin-dot');
         const numBtns = document.querySelectorAll('.num-btn');
         let lockTimer = null;
+        let pwaKeyHandler = null;
 
         function initSecurity() {
             if (sessionStorage.getItem('icarus_unlocked') === 'true') {
@@ -561,20 +557,67 @@
                 return;
             }
             
+            // v1.5 Visual Tap Fix (Touch/Mouse)
             numBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    if (currentPin.length >= 4) return;
-                    
-                    triggerHaptic();
-                    const val = e.target.textContent;
-                    currentPin += val;
-                    updatePinUI();
-                    
-                    if (currentPin.length === 4) {
-                        checkPin();
-                    }
+                // Touch start for immediate glow
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Stop emulated mouse events
+                    processPinInput(btn.getAttribute('data-val'), btn);
+                }, {passive: false});
+                
+                // Fallback for desktop mouse
+                btn.addEventListener('mousedown', (e) => {
+                    processPinInput(btn.getAttribute('data-val'), btn);
+                });
+                
+                // Remove visual glow on release
+                const removeGlow = () => btn.classList.remove('active-tap');
+                ['touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(evt => {
+                    btn.addEventListener(evt, removeGlow);
                 });
             });
+
+            // v1.6 Physical Keyboard Support (MatePad)
+            pwaKeyHandler = (e) => {
+                // Only process if lock screen is active
+                if (lockScreen.style.display === 'none' || lockScreen.classList.contains('unlocked')) {
+                    window.removeEventListener('keydown', pwaKeyHandler);
+                    return;
+                }
+
+                if (e.key >= '0' && e.key <= '9') {
+                    e.preventDefault();
+                    const targetBtn = Array.from(numBtns).find(b => b.getAttribute('data-val') === e.key);
+                    // Flash UI synthetically
+                    if (targetBtn) {
+                        targetBtn.classList.add('active-tap');
+                        setTimeout(() => targetBtn.classList.remove('active-tap'), 150);
+                    }
+                    processPinInput(e.key);
+                } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                    e.preventDefault();
+                    if (currentPin.length > 0) {
+                        currentPin = currentPin.slice(0, -1);
+                        updatePinUI();
+                        if (navigator.vibrate) navigator.vibrate(5); // Tiny blip for backspace
+                    }
+                }
+            };
+            window.addEventListener('keydown', pwaKeyHandler);
+        }
+
+        function processPinInput(val, btnElement = null) {
+            if (currentPin.length >= 4) return;
+            
+            if (btnElement) btnElement.classList.add('active-tap');
+            triggerHaptic();
+            
+            currentPin += String(val);
+            updatePinUI();
+            
+            if (currentPin.length === 4) {
+                checkPin();
+            }
         }
 
         function updatePinUI() {
