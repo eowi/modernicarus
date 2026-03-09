@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Modern Icarus Pocket</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- PURE BLACK MOBILE CSS (STEPPER EDITION) --- */
+        :root {
+            --bg: #000000;
+            --card-bg: #111111;
+            --text-main: #ffffff;
+            --text-dim: #888888;
+            --neon-yellow: #ffff00;
+            --neon-green: #39ff14;
+            --danger: #ff0055;
+            --border: #333333;
+            --focus: #00f3ff;
+            --step-bg: #222222;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            overflow-x: hidden;
+        }
+
+        /* Typography */
+        h1, h2, h3, p { margin: 0; }
+        
+        /* Layout Containers */
+        .header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        .header h1 {
+            font-weight: 900;
+            font-size: 18px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header .pocket { color: var(--neon-yellow); }
+
+        .container {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Reusable Card */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- STEPPER UI --- */
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .input-wrapper:last-child { margin-bottom: 0; }
+        
+        .input-wrapper label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .stepper-group {
+            display: flex;
+            align-items: center;
+            background: #1c1c1c;
+            border: 1px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border 0.2s;
+        }
+        .stepper-group:focus-within {
+            border-color: var(--focus);
+        }
+
+        .step-btn {
+            background: var(--step-bg);
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation; /* Prevent double-tap zoom */
+        }
+        .step-btn:active {
+            background: #444;
+        }
+        
+        .stepper-group input {
+            appearance: none;
+            -webkit-appearance: none;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            flex: 1;
+            width: 100%;
+            padding: 0 4px;
+        }
+        .stepper-group input:focus { outline: none; }
+
+        /* Capital Input specific */
+        .capital-group input {
+            font-size: 24px !important;
+            color: var(--focus) !important;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        .capital-group .step-btn {
+            font-size: 28px;
+        }
+
+        /* Split Columns for Sites */
+        .site-grid {
+            display: flex;
+            gap: 12px;
+        }
+        .site-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+        }
+        
+        /* Adjust stepper width for side-by-side */
+        .site-col .step-btn {
+            width: 44px; /* Slightly narrower to fit two on screen */
+            font-size: 20px;
+        }
+        .site-col .stepper-group input {
+            font-size: 18px;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            background: #000;
+            border: 2px dashed #444;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stake-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #222;
+        }
+        
+        .stake-label {
+            font-size: 13px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .stake-val {
+            font-size: 18px;
+            font-weight: 800;
+            font-family: monospace;
+            color: var(--neon-yellow);
+            letter-spacing: 1px;
+        }
+
+        .profit-container {
+            margin-top: 12px;
+        }
+        .profit-label {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .profit-val {
+            font-size: 32px;
+            font-weight: 900;
+            font-family: monospace;
+            color: var(--danger);
+            letter-spacing: -1px;
+        }
+        .profit-val.positive {
+            color: var(--neon-green);
+            text-shadow: 0 0 16px rgba(57, 255, 20, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>Modern Icarus <span class="pocket">Pocket</span></h1>
+    </header>
+
+    <main class="container">
+        
+        <!-- GLOBAL CAPITAL -->
+        <section class="card">
+            <div class="card-header">BANKROLL (LIVE CAPITAL $)</div>
+            <div class="input-wrapper capital-group">
+                <div class="stepper-group">
+                    <button class="step-btn minus" data-target="capInput" data-step="500" data-dir="-1">−</button>
+                    <input type="number" id="capInput" value="20000" step="100" inputmode="decimal">
+                    <button class="step-btn plus" data-target="capInput" data-step="500" data-dir="1">+</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SITES GRID -->
+        <div class="site-grid">
+            <!-- SITE 1 -->
+            <section class="card site-col">
+                <div class="card-header" style="color:var(--neon-yellow)">Site 1</div>
+                
+                <div class="input-wrapper">
+                    <label>Odds</label>
+                    <div class="stepper-group">
+                        <button class="step-btn minus" data-target="odds1" data-step="0.01" data-dir="-1">−</button>
+                        <input type="number" id="odds1" placeholder="--" step="0.01" inputmode="decimal">
+                        <button class="step-btn plus" data-target="odds1" data-step="0.01" data-dir="1">+</button>
+                    </div>
+                </div>
+                
+                <div class="input-wrapper">
+                    <label>Bonus %</label>
+                    <div class="stepper-group">
+                        <button class="step-btn minus" data-target="bonus1" data-step="1" data-dir="-1">−</button>
+                        <input type="number" id="bonus1" value="10" step="1" inputmode="numeric">
+                        <button class="step-btn plus" data-target="bonus1" data-step="1" data-dir="1">+</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SITE 2 -->
+            <section class="card site-col">
+                <div class="card-header" style="color:var(--neon-yellow)">Site 2</div>
+                
+                <div class="input-wrapper">
+                    <label>Odds</label>
+                    <div class="stepper-group">
+                        <button class="step-btn minus" data-target="odds2" data-step="0.01" data-dir="-1">−</button>
+                        <input type="number" id="odds2" placeholder="--" step="0.01" inputmode="decimal">
+                        <button class="step-btn plus" data-target="odds2" data-step="0.01" data-dir="1">+</button>
+                    </div>
+                </div>
+                
+                <div class="input-wrapper">
+                    <label>Bonus %</label>
+                    <div class="stepper-group">
+                        <button class="step-btn minus" data-target="bonus2" data-step="1" data-dir="-1">−</button>
+                        <input type="number" id="bonus2" value="10" step="1" inputmode="numeric">
+                        <button class="step-btn plus" data-target="bonus2" data-step="1" data-dir="1">+</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- RESULTS -->
+        <section class="results-panel" id="resultsPanel">
+            <div class="stake-row">
+                <span class="stake-label">Stake 1</span>
+                <span class="stake-val" id="res1">--</span>
+            </div>
+            <div class="stake-row" style="border-bottom:none; margin-bottom:0; padding-bottom:0;">
+                <span class="stake-label">Stake 2</span>
+                <span class="stake-val" id="res2">--</span>
+            </div>
+
+            <div class="profit-container">
+                <div class="profit-label">Net Profit (Bonus Included)</div>
+                <div class="profit-val" id="resProfit">--</div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        Tip: Tap Share > "Add to Home Screen" for Full App UI.
+    </footer>
+
+    <!-- --- JAVASCRIPT LOGIC --- -->
+    <script>
+        // DOM Elements
+        const elCap = document.getElementById('capInput');
+        const elOdds1 = document.getElementById('odds1');
+        const elBonus1 = document.getElementById('bonus1');
+        const elOdds2 = document.getElementById('odds2');
+        const elBonus2 = document.getElementById('bonus2');
+        
+        const res1 = document.getElementById('res1');
+        const res2 = document.getElementById('res2');
+        const resProfit = document.getElementById('resProfit');
+        const resultsPanel = document.getElementById('resultsPanel');
+
+        const stepBtns = document.querySelectorAll('.step-btn');
+
+        // Storage Key
+        const STORAGE_KEY = 'icarus_pocket_v2_stepper';
+
+        // Initialize App
+        function initApp() {
+            loadState();
+            attachListeners();
+            calculate(); 
+        }
+
+        // Attach Input Listeners
+        function attachListeners() {
+            // Typing triggers
+            [elCap, elOdds1, elBonus1, elOdds2, elBonus2].forEach(input => {
+                input.addEventListener('input', () => {
+                    calculate();
+                    saveState();
+                });
+            });
+
+            // Stepper triggers
+            stepBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    handleStep(e.target);
+                });
+            });
+        }
+
+        // Handle +/- Button Clicks
+        function handleStep(btn) {
+            const targetId = btn.getAttribute('data-target');
+            const targetInput = document.getElementById(targetId);
+            const stepNum = parseFloat(btn.getAttribute('data-step'));
+            const direction = parseFloat(btn.getAttribute('data-dir')); // 1 or -1
+
+            if (!targetInput) return;
+
+            let currentVal = parseFloat(targetInput.value);
+            if (isNaN(currentVal)) {
+                // If empty, start at a reasonable baseline
+                if (targetId.includes('odds')) currentVal = 1.00;
+                else if (targetId.includes('bonus')) currentVal = 10;
+                else currentVal = 20000;
+            }
+
+            // Math execution
+            let newVal = currentVal + (stepNum * direction);
+
+            // Boundaries
+            if (targetId.includes('odds')) {
+                if (newVal < 1.01) newVal = 1.01;
+                // Fix JS floating point issues (.01 math gets ugly e.g. 1.85999999999)
+                newVal = parseFloat(newVal.toFixed(2)); 
+            } else if (targetId.includes('bonus')) {
+                if (newVal < 0) newVal = 0;
+                if (newVal > 100) newVal = 100;
+            } else {
+                // Capital
+                if (newVal < 100) newVal = 100; 
+            }
+
+            // Update DOM and Trigger
+            targetInput.value = newVal;
+            calculate();
+            saveState();
+        }
+
+        // Asymmetric Arbitrage Formula (from v6.3)
+        function calcROI(cap, o1, o2, bonusPercent1, bonusPercent2) {
+            if (o1 <= 1 || o2 <= 1) return { b1: 0, b2: 0, netProfit: 0 };
+            
+            const k1 = (parseFloat(bonusPercent1) || 0) / 100;
+            const k2 = (parseFloat(bonusPercent2) || 0) / 100;
+            
+            const num = cap * (o2 - k2);
+            const den = o1 + o2 - k1 - k2;
+            
+            if (den <= 0) return { b1: 0, b2: 0, netProfit: 0 };
+            
+            const b1 = num / den;
+            const b2 = cap - b1;
+            
+            const netProfit = (b1 * o1) + (b2 * k2) - cap;
+            
+            return { b1, b2, netProfit };
+        }
+
+        // Main Calc Execution & Render
+        function calculate() {
+            const cap = parseFloat(elCap.value);
+            const o1 = parseFloat(elOdds1.value);
+            const b1 = parseFloat(elBonus1.value) || 0;
+            const o2 = parseFloat(elOdds2.value);
+            const b2 = parseFloat(elBonus2.value) || 0;
+            
+            // Validation
+            if (!cap || !o1 || !o2 || o1 <= 1 || o2 <= 1) {
+                res1.textContent = '--';
+                res2.textContent = '--';
+                resProfit.textContent = '--';
+                resProfit.className = 'profit-val';
+                resultsPanel.style.borderColor = '#444';
+                return;
+            }
+
+            // Math
+            const res = calcROI(cap, o1, o2, b1, b2);
+
+            // Render Stakes
+            res1.textContent = Math.floor(res.b1).toLocaleString();
+            res2.textContent = Math.floor(res.b2).toLocaleString();
+
+            // Render Profit
+            const profitStr = (res.netProfit > 0 ? '+' : '') + res.netProfit.toFixed(2);
+            resProfit.textContent = profitStr;
+            
+            // Color Logic
+            if (res.netProfit > 0) {
+                resProfit.className = 'profit-val positive';
+                resultsPanel.style.borderColor = '#39ff14'; // Green border
+            } else {
+                resProfit.className = 'profit-val';
+                resultsPanel.style.borderColor = '#ff0055'; // Red border
+            }
+        }
+
+        // LocalStorage Save
+        function saveState() {
+            const state = {
+                capital: elCap.value,
+                odds1: elOdds1.value,
+                bonus1: elBonus1.value,
+                odds2: elOdds2.value,
+                bonus2: elBonus2.value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        // LocalStorage Load
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    if (state.capital) elCap.value = state.capital;
+                    if (state.odds1) elOdds1.value = state.odds1;
+                    if (state.bonus1) elBonus1.value = state.bonus1;
+                    if (state.odds2) elOdds2.value = state.odds2;
+                    if (state.bonus2) elBonus2.value = state.bonus2;
+                } catch (e) {
+                    console.error("Could not parse saved state.");
+                }
+            }
+        }
+
+        // Run
+        initApp();
+    </script>
+</body>
+</html>
