@@ -8,8 +8,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Lightweight QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* --- PURE BLACK MOBILE CSS (STEPPER EDITION) --- */
+        /* --- PURE BLACK MOBILE CSS (QR SYNC EDITION v1.2) --- */
         :root {
             --bg: #000000;
             --card-bg: #111111;
@@ -18,6 +20,7 @@
             --neon-yellow: #ffff00;
             --neon-green: #39ff14;
             --danger: #ff0055;
+            --warning: #FFA500;
             --border: #333333;
             --focus: #00f3ff;
             --step-bg: #222222;
@@ -49,7 +52,9 @@
         .header {
             padding: 12px 20px;
             border-bottom: 1px solid var(--border);
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .header h1 {
             font-weight: 900;
@@ -58,7 +63,23 @@
             text-transform: uppercase;
         }
         .header .pocket { color: var(--neon-yellow); }
+        .header .version { color: var(--text-dim); font-size: 10px; font-weight: normal; }
 
+        /* QR Sync Button */
+        .btn-sync {
+            background: transparent;
+            border: 1px solid var(--neon-blue, #00f3ff);
+            color: var(--neon-blue, #00f3ff);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-sync:active { background: rgba(0, 243, 255, 0.2); }
+        
         .container {
             flex: 1;
             padding: 16px;
@@ -124,11 +145,9 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            touch-action: manipulation; /* Prevent double-tap zoom */
+            touch-action: manipulation;
         }
-        .step-btn:active {
-            background: #444;
-        }
+        .step-btn:active { background: #444; }
         
         .stepper-group input {
             appearance: none;
@@ -146,37 +165,21 @@
         }
         .stepper-group input:focus { outline: none; }
 
-        /* Capital Input specific */
+        /* Capital Input */
         .capital-group input {
             font-size: 24px !important;
             color: var(--focus) !important;
             letter-spacing: 1px;
             text-align: center;
         }
-        .capital-group .step-btn {
-            font-size: 28px;
-        }
+        .capital-group .step-btn { font-size: 28px; }
 
         /* Split Columns for Sites */
-        .site-grid {
-            display: flex;
-            gap: 12px;
-        }
-        .site-col {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 12px;
-        }
+        .site-grid { display: flex; gap: 12px; }
+        .site-col { flex: 1; display: flex; flex-direction: column; padding: 12px; }
         
-        /* Adjust stepper width for side-by-side */
-        .site-col .step-btn {
-            width: 44px; /* Slightly narrower to fit two on screen */
-            font-size: 20px;
-        }
-        .site-col .stepper-group input {
-            font-size: 18px;
-        }
+        .site-col .step-btn { width: 44px; font-size: 20px; }
+        .site-col .stepper-group input { font-size: 18px; }
 
         /* Results Panel */
         .results-panel {
@@ -196,40 +199,122 @@
             border-bottom: 1px solid #222;
         }
         
-        .stake-label {
-            font-size: 13px;
-            color: var(--text-dim);
-            font-weight: 600;
-        }
-
+        .stake-label { font-size: 13px; color: var(--text-dim); font-weight: 600; }
         .stake-val {
-            font-size: 18px;
-            font-weight: 800;
-            font-family: monospace;
-            color: var(--neon-yellow);
-            letter-spacing: 1px;
+            font-size: 18px; font-weight: 800; font-family: monospace;
+            color: var(--neon-yellow); letter-spacing: 1px;
         }
 
-        .profit-container {
-            margin-top: 12px;
-        }
+        .profit-container { margin-top: 12px; }
         .profit-label {
-            font-size: 11px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            font-weight: 800;
-            margin-bottom: 4px;
+            font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+            font-weight: 800; margin-bottom: 4px;
         }
         .profit-val {
-            font-size: 32px;
-            font-weight: 900;
-            font-family: monospace;
-            color: var(--danger);
-            letter-spacing: -1px;
+            font-size: 32px; font-weight: 900; font-family: monospace;
+            color: var(--danger); letter-spacing: -1px; transition: color 0.3s;
         }
+        
         .profit-val.positive {
             color: var(--neon-green);
             text-shadow: 0 0 16px rgba(57, 255, 20, 0.4);
+        }
+
+        /* Risk Margin Animation */
+        @keyframes blink-orange {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .profit-val.warning {
+            color: var(--warning);
+            text-shadow: 0 0 16px rgba(255, 165, 0, 0.4);
+            animation: blink-orange 1.5s infinite ease-in-out;
+        }
+
+        /* Scratchpad */
+        .scratchpad-section {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            border: none;
+            border-top: 1px solid var(--border);
+            border-radius: 0;
+            background: #050505;
+        }
+        .scratchpad-header {
+            padding: 12px 16px 4px 16px;
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        textarea.scratch {
+            background: transparent;
+            border: none;
+            color: #ddd;
+            font-family: inherit;
+            font-size: 14px;
+            padding: 10px 16px 20px 16px;
+            width: 100%;
+            min-height: 120px;
+            resize: none;
+        }
+        textarea.scratch:focus { outline: none; }
+
+        /* --- QR MODAL --- */
+        .modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: #111;
+            border: 1px solid var(--neon-blue);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+        }
+        .modal-title {
+            color: var(--text-main);
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .qr-container {
+            background: #fff; /* QR needs contrast */
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .btn-close-qr {
+            background: transparent;
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .btn-close-qr:active {
+            background: rgba(255, 0, 85, 0.2);
         }
 
         /* Footer */
@@ -237,15 +322,25 @@
             text-align: center;
             padding: 16px;
             font-size: 10px;
-            color: #555;
+            color: #444;
         }
     </style>
 </head>
 <body>
 
     <header class="header">
-        <h1>Modern Icarus <span class="pocket">Pocket</span></h1>
+        <h1>Modern Icarus <span class="pocket">Pocket</span> <span class="version">v1.2</span></h1>
+        <button id="btnSync" class="btn-sync">QR SYNC</button>
     </header>
+    
+    <!-- QR Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Scan to Transfer</div>
+            <div class="qr-container" id="qrcode"></div>
+            <button id="btnCloseQr" class="btn-close-qr">CLOSE</button>
+        </div>
+    </div>
 
     <main class="container">
         
@@ -329,13 +424,19 @@
 
     </main>
 
+    <!-- SCRATCHPAD -->
+    <section class="scratchpad-section">
+        <div class="scratchpad-header">Scratchpad (Auto-saved)</div>
+        <textarea id="scratchpad" class="scratch" placeholder="Type betting notes here..."></textarea>
+    </section>
+
     <footer class="footer">
-        Tip: Tap Share > "Add to Home Screen" for Full App UI.
+        Add to Home Screen for Full App UI.
     </footer>
 
     <!-- --- JAVASCRIPT LOGIC --- -->
     <script>
-        // DOM Elements
+        // DOM
         const elCap = document.getElementById('capInput');
         const elOdds1 = document.getElementById('odds1');
         const elBonus1 = document.getElementById('bonus1');
@@ -348,20 +449,66 @@
         const resultsPanel = document.getElementById('resultsPanel');
 
         const stepBtns = document.querySelectorAll('.step-btn');
+        const btnSync = document.getElementById('btnSync');
+        const scratchpad = document.getElementById('scratchpad');
+        
+        // QR Modal DOM
+        const qrModal = document.getElementById('qrModal');
+        const qrContainer = document.getElementById('qrcode');
+        const btnCloseQr = document.getElementById('btnCloseQr');
 
-        // Storage Key
-        const STORAGE_KEY = 'icarus_pocket_v2_stepper';
+        // Storage Keys
+        const STORAGE_KEY = 'icarus_pocket_v1_2_state';
+        const NOTES_KEY   = 'icarus_pocket_v1_2_notes';
 
-        // Initialize App
+        // Init
         function initApp() {
-            loadState();
+            
+            // 1. Check URL Params for Quick Sync (Inbound Sync)
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('cap')) {
+                // Load core values
+                elCap.value = params.get('cap');
+                elOdds1.value = params.get('o1') || '';
+                elBonus1.value = params.get('b1') || 10;
+                elOdds2.value = params.get('o2') || '';
+                elBonus2.value = params.get('b2') || 10;
+                
+                // Load Encoded Scratchpad
+                if (params.has('no')) {
+                    try {
+                        const decodedNotes = decodeURIComponent(params.get('no'));
+                        scratchpad.value = decodedNotes;
+                        localStorage.setItem(NOTES_KEY, decodedNotes); // Immediately save
+                    } catch(e) { console.error("Could not decode notes"); }
+                }
+
+                // Clean URL (remove params physically from address bar so reloads don't reset state)
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+                
+                saveState(); // Overwrite local state with freshly synced data
+            } else {
+                // Normal Load
+                loadState();
+                loadScratchpad();
+            }
+
             attachListeners();
             calculate(); 
         }
 
-        // Attach Input Listeners
+        // Haptic Feedback
+        function triggerHaptic() {
+            if (navigator.vibrate) {
+                // Short 10ms vibration for button feel
+                navigator.vibrate(10); 
+            }
+        }
+
+        // Listeners
         function attachListeners() {
-            // Typing triggers
+            // Typing
             [elCap, elOdds1, elBonus1, elOdds2, elBonus2].forEach(input => {
                 input.addEventListener('input', () => {
                     calculate();
@@ -369,54 +516,93 @@
                 });
             });
 
-            // Stepper triggers
+            // Steppers
             stepBtns.forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    triggerHaptic();
                     handleStep(e.target);
                 });
             });
+
+            // Scratchpad Auto-save
+            scratchpad.addEventListener('input', () => {
+                localStorage.setItem(NOTES_KEY, scratchpad.value);
+            });
+
+            // --- QR SYNC OUTBOUND ---
+            btnSync.addEventListener('click', () => {
+                triggerHaptic();
+                
+                // Build Payload URL
+                const url = new URL(window.location.protocol + "//" + window.location.host + window.location.pathname);
+                url.searchParams.set('cap', elCap.value);
+                if (elOdds1.value) url.searchParams.set('o1', elOdds1.value);
+                url.searchParams.set('b1', elBonus1.value || 0);
+                if (elOdds2.value) url.searchParams.set('o2', elOdds2.value);
+                url.searchParams.set('b2', elBonus2.value || 0);
+                
+                if (scratchpad.value.trim() !== '') {
+                    url.searchParams.set('no', encodeURIComponent(scratchpad.value));
+                }
+                
+                // Clear previous QR
+                qrContainer.innerHTML = "";
+                
+                // Generate QR Code via CDN Library
+                new QRCode(qrContainer, {
+                    text: url.toString(),
+                    width: 200,
+                    height: 200,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.L // Low error correction = less dense/faster scan
+                });
+
+                // Show Modal
+                qrModal.classList.add('active');
+            });
+
+            btnCloseQr.addEventListener('click', () => {
+                triggerHaptic();
+                qrModal.classList.remove('active');
+            });
         }
 
-        // Handle +/- Button Clicks
+        // Step Handler
         function handleStep(btn) {
             const targetId = btn.getAttribute('data-target');
             const targetInput = document.getElementById(targetId);
             const stepNum = parseFloat(btn.getAttribute('data-step'));
-            const direction = parseFloat(btn.getAttribute('data-dir')); // 1 or -1
+            const direction = parseFloat(btn.getAttribute('data-dir'));
 
             if (!targetInput) return;
 
             let currentVal = parseFloat(targetInput.value);
             if (isNaN(currentVal)) {
-                // If empty, start at a reasonable baseline
                 if (targetId.includes('odds')) currentVal = 1.00;
                 else if (targetId.includes('bonus')) currentVal = 10;
                 else currentVal = 20000;
             }
 
-            // Math execution
             let newVal = currentVal + (stepNum * direction);
 
-            // Boundaries
+            // Bounds
             if (targetId.includes('odds')) {
                 if (newVal < 1.01) newVal = 1.01;
-                // Fix JS floating point issues (.01 math gets ugly e.g. 1.85999999999)
                 newVal = parseFloat(newVal.toFixed(2)); 
             } else if (targetId.includes('bonus')) {
                 if (newVal < 0) newVal = 0;
                 if (newVal > 100) newVal = 100;
             } else {
-                // Capital
                 if (newVal < 100) newVal = 100; 
             }
 
-            // Update DOM and Trigger
             targetInput.value = newVal;
             calculate();
             saveState();
         }
 
-        // Asymmetric Arbitrage Formula (from v6.3)
+        // Math v6.3 Port
         function calcROI(cap, o1, o2, bonusPercent1, bonusPercent2) {
             if (o1 <= 1 || o2 <= 1) return { b1: 0, b2: 0, netProfit: 0 };
             
@@ -436,7 +622,7 @@
             return { b1, b2, netProfit };
         }
 
-        // Main Calc Execution & Render
+        // Calculator & UI Updates
         function calculate() {
             const cap = parseFloat(elCap.value);
             const o1 = parseFloat(elOdds1.value);
@@ -444,7 +630,6 @@
             const o2 = parseFloat(elOdds2.value);
             const b2 = parseFloat(elBonus2.value) || 0;
             
-            // Validation
             if (!cap || !o1 || !o2 || o1 <= 1 || o2 <= 1) {
                 res1.textContent = '--';
                 res2.textContent = '--';
@@ -454,28 +639,31 @@
                 return;
             }
 
-            // Math
             const res = calcROI(cap, o1, o2, b1, b2);
 
-            // Render Stakes
             res1.textContent = Math.floor(res.b1).toLocaleString();
             res2.textContent = Math.floor(res.b2).toLocaleString();
 
-            // Render Profit
             const profitStr = (res.netProfit > 0 ? '+' : '') + res.netProfit.toFixed(2);
             resProfit.textContent = profitStr;
             
-            // Color Logic
+            // UI Color & Risk Margin logic
             if (res.netProfit > 0) {
-                resProfit.className = 'profit-val positive';
-                resultsPanel.style.borderColor = '#39ff14'; // Green border
+                // Pro Feature: Risk Margin Check (< 1% of Capital)
+                if (res.netProfit < (cap * 0.01)) {
+                    resProfit.className = 'profit-val warning'; // Orange Pulse
+                    resultsPanel.style.borderColor = '#FFA500'; 
+                } else {
+                    resProfit.className = 'profit-val positive'; // Healthy Green
+                    resultsPanel.style.borderColor = '#39ff14'; 
+                }
             } else {
-                resProfit.className = 'profit-val';
-                resultsPanel.style.borderColor = '#ff0055'; // Red border
+                resProfit.className = 'profit-val'; // Red
+                resultsPanel.style.borderColor = '#ff0055'; 
             }
         }
 
-        // LocalStorage Save
+        // State Machine
         function saveState() {
             const state = {
                 capital: elCap.value,
@@ -487,7 +675,6 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }
 
-        // LocalStorage Load
         function loadState() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
@@ -498,13 +685,18 @@
                     if (state.bonus1) elBonus1.value = state.bonus1;
                     if (state.odds2) elOdds2.value = state.odds2;
                     if (state.bonus2) elBonus2.value = state.bonus2;
-                } catch (e) {
-                    console.error("Could not parse saved state.");
-                }
+                } catch (e) { console.error("Could not parse saved state."); }
             }
         }
 
-        // Run
+        function loadScratchpad() {
+            const savedNotes = localStorage.getItem(NOTES_KEY);
+            if (savedNotes) {
+                scratchpad.value = savedNotes;
+            }
+        }
+
+        // Boot
         initApp();
     </script>
 </body>
